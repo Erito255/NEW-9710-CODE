@@ -4,23 +4,22 @@
 
 package frc.robot;
 
-import edu.wpi.first.util.sendable.SendableRegistry;
+
+
+// added imports
+
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
-// added imports
-/* 
-import com.revrobotics.spark.SparkMax; 
-import com.revrobotics.spark.config.SparkMaxConfig;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.SparkBase.PersistMode;
-import com.revrobotics.spark.SparkBase.ResetMode; */
-
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
+import com.ctre.phoenix6.signals.InvertedValue;
 
 
 /**
@@ -39,14 +38,14 @@ public class Robot extends TimedRobot {
   private final TalonFX rightLeader = new TalonFX(2);
   private final TalonFX rightFollower = new TalonFX(3);
 
-  
-  
-  private final DifferentialDrive m_robotDrive =
-    new DifferentialDrive(leftLeader::set, rightLeader::set);
+
+  private final DifferentialDrive m_robotDrive = new DifferentialDrive(leftLeader::set, rightLeader::set);
   private final Timer m_timer = new Timer();
 
   private final XboxController gamepad0Driver = new XboxController(0);
-  private final XboxController gamepad1Operator = new XboxController(1);
+  //private final XboxController gamepad1Operator = new XboxController(1);
+
+
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -57,17 +56,43 @@ public class Robot extends TimedRobot {
     m_chooser.addOption("Center", kCenter);
     SmartDashboard.putData("Auto choices", m_chooser);
 
-    SendableRegistry.addChild(m_robotDrive, leftLeader);
-    SendableRegistry.addChild(m_robotDrive, rightLeader);
+    configureMotors();
 
-
-    rightLeader.setInverted(true);
-    
-    
+    m_robotDrive.setSafetyEnabled(true);
+    m_robotDrive.setDeadband(0.02);
   
-    
-
   } 
+
+  private void configureMotors() {
+        // Apply default configurations
+        leftLeader.getConfigurator().apply(new MotorOutputConfigs());
+        leftFollower.getConfigurator().apply(new MotorOutputConfigs());
+        rightLeader.getConfigurator().apply(new MotorOutputConfigs());
+        rightFollower.getConfigurator().apply(new MotorOutputConfigs());
+
+        // Set brake mode
+        leftLeader.setNeutralMode(NeutralModeValue.Brake);
+        leftFollower.setNeutralMode(NeutralModeValue.Brake);
+        rightLeader.setNeutralMode(NeutralModeValue.Brake);
+        rightFollower.setNeutralMode(NeutralModeValue.Brake);
+
+        // Set motor inversion
+        MotorOutputConfigs leftConfig = new MotorOutputConfigs();
+        leftConfig.Inverted = InvertedValue.CounterClockwise_Positive;
+        leftLeader.getConfigurator().apply(leftConfig);
+        leftFollower.getConfigurator().apply(leftConfig);
+
+        MotorOutputConfigs rightConfig = new MotorOutputConfigs();
+        rightConfig.Inverted = InvertedValue.Clockwise_Positive;
+        rightLeader.getConfigurator().apply(rightConfig);
+        rightFollower.getConfigurator().apply(rightConfig);
+
+        // Set followers
+        leftFollower.setControl(new Follower(leftLeader.getDeviceID(), false));
+        rightFollower.setControl(new Follower(rightLeader.getDeviceID(), false));
+  }
+    
+    
 
   /**
    * This function is called every 20 ms, no matter the mode. Use this for items like diagnostics
@@ -94,6 +119,8 @@ public class Robot extends TimedRobot {
     m_autoSelected = m_chooser.getSelected();
     // m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
     System.out.println("Auto selected: " + m_autoSelected);
+    m_timer.reset();
+    m_timer.start();
 
   }
 
@@ -104,15 +131,16 @@ public class Robot extends TimedRobot {
       case kCenter:
         // Put custom auto code here
         if(m_timer.get()< 3){
-          m_robotDrive.tankDrive(.5,.5);
-        }
-        
-        break;
+          m_robotDrive.tankDrive(0.5, 0.5);;
+        } else {
+          m_robotDrive.tankDrive(0, 0);
+      }  
+      break;
       case kDefaultAuto: 
       default:
         // Put default auto code here
-        m_robotDrive.tankDrive(.5,.5);
-        break;
+        m_robotDrive.tankDrive(0.5, 0.5);
+      break;
     }
   }
 
@@ -121,11 +149,12 @@ public class Robot extends TimedRobot {
   public void teleopInit() {
     
   }
-
+  
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
 
+    
     m_robotDrive.arcadeDrive(-gamepad0Driver.getLeftY(), -gamepad0Driver.getRightX());
 
 
