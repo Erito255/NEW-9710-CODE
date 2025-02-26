@@ -131,7 +131,10 @@ public class Robot extends TimedRobot {
       case kCenter:
         // Put custom auto code here
         if(m_timer.get()< 3){
-          m_robotDrive.tankDrive(0.5, 0.5);;
+          m_robotDrive.tankDrive(0.5, 0.5);
+        }
+        if (m_timer.get()< 5){
+          m_robotDrive.tankDrive(0.5, -0.5);
         } else {
           m_robotDrive.tankDrive(0, 0);
       }  
