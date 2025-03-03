@@ -11,9 +11,18 @@ package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
+
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+
+import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.SparkBase.PersistMode;
+import com.revrobotics.spark.SparkBase.ResetMode;
+
 
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -38,12 +47,22 @@ public class Robot extends TimedRobot {
   private final TalonFX rightLeader = new TalonFX(2);
   private final TalonFX rightFollower = new TalonFX(3);
 
+  private final SparkMax LeftElevator = new SparkMax(6, MotorType.kBrushless);
+  private final SparkMax rightElevator = new SparkMax(7, MotorType.kBrushless);
+
+  private final DifferentialDrive myDrive = new  DifferentialDrive(LeftElevator, rightElevator);
 
   private final DifferentialDrive m_robotDrive = new DifferentialDrive(leftLeader::set, rightLeader::set);
   private final Timer m_timer = new Timer();
 
+  private final SparkMaxConfig driveConfig = new SparkMaxConfig();
+
+  private final double ROLLER_EJECT_VALUE = 0.44;
+
   private final XboxController gamepad0Driver = new XboxController(0);
-  //private final XboxController gamepad1Operator = new XboxController(1);
+  private final XboxController gamepad1Operator = new XboxController(1);
+
+  
 
 
 
@@ -58,8 +77,18 @@ public class Robot extends TimedRobot {
 
     configureMotors();
 
+    driveConfig.smartCurrentLimit(60);
+    driveConfig.voltageCompensation(12);
+
+    driveConfig.follow(LeftElevator);
+    rightElevator.configure(driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+
+    driveConfig.disableFollowerMode();
+    
     m_robotDrive.setSafetyEnabled(true);
     m_robotDrive.setDeadband(0.02);
+
+
   
   } 
 
@@ -102,7 +131,10 @@ public class Robot extends TimedRobot {
    * SmartDashboard integrated updating.
    */
   @Override
-  public void robotPeriodic() {}
+  public void robotPeriodic() {
+
+    
+  }
 
   /**
    * This autonomous (along with the chooser code above) shows how to select between different
@@ -156,8 +188,13 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
+    if(gamepad1Operator.getRightBumperButton() == true){
+      LeftElevator.set(.4);
+    }
 
-    
+    if(gamepad1Operator.getLeftBumperButton() == true){
+      LeftElevator.set(-.4);
+    }
     m_robotDrive.arcadeDrive(-gamepad0Driver.getLeftY(), -gamepad0Driver.getRightX());
 
 

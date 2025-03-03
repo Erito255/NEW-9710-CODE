@@ -2,13 +2,13 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package frc.robot.commands;
+/**package frc.robot.commands;
 
 import frc.robot.Constants.RollerConstants;
 import frc.robot.subsystems.RollerSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
 
-/** A command to remove (score or pass) Algae. */
+/** A command to remove (score or pass) Algae. 
 public class AlgieOutCommand extends Command {
   private final RollerSubsystem m_roller;
 
@@ -17,7 +17,7 @@ public class AlgieOutCommand extends Command {
    * We recommend not using this to score coral.
    *
    * @param roller The subsystem used by this command.
-   */
+   
   public AlgieOutCommand(RollerSubsystem roller) {
     m_roller = roller;
     // Use addRequirements() here to declare subsystem dependencies.
@@ -45,4 +45,4 @@ public class AlgieOutCommand extends Command {
   public boolean isFinished() {
     return false;
   }
-}
+} */

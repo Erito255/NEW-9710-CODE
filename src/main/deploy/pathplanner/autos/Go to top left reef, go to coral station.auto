@@ -1,0 +1,55 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "despense coral 1 blue 1"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Blue pick-up coral top left"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Blue Coral Dispensor Top Left"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Blue pick-up coral top left"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Blue Coral Dispensor Top Left"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Blue pick-up coral top left"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Blue Coral Dispensor Top Left"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}
