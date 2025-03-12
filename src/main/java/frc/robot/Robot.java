@@ -47,17 +47,26 @@ public class Robot extends TimedRobot {
   private final TalonFX rightLeader = new TalonFX(2);
   private final TalonFX rightFollower = new TalonFX(3);
 
-  private final SparkMax LeftElevator = new SparkMax(6, MotorType.kBrushless);
-  private final SparkMax rightElevator = new SparkMax(7, MotorType.kBrushless);
+  private final SparkMax LeftElevator = new SparkMax(4, MotorType.kBrushless);
+  private final SparkMax rightElevator = new SparkMax(5, MotorType.kBrushless);
 
-  private final DifferentialDrive myDrive = new  DifferentialDrive(LeftElevator, rightElevator);
+  private final SparkMax RollerMotor = new SparkMax(6, MotorType.kBrushless);
+  private final SparkMax ArmMotor = new SparkMax(7, MotorType.kBrushless);
+  private final SparkMax TopEndMotor = new SparkMax(8, MotorType.kBrushless);
+  private final SparkMax BottomEndMotor = new SparkMax(9, MotorType.kBrushless);
 
   private final DifferentialDrive m_robotDrive = new DifferentialDrive(leftLeader::set, rightLeader::set);
   private final Timer m_timer = new Timer();
 
   private final SparkMaxConfig driveConfig = new SparkMaxConfig();
+  private final SparkMaxConfig rollerConfig = new SparkMaxConfig();
+  private final SparkMaxConfig endConfig = new SparkMaxConfig();
+  private final SparkMaxConfig ArmConfig = new SparkMaxConfig();
 
   private final double ROLLER_EJECT_VALUE = 0.44;
+  private double driveSpeed = 1;
+
+
 
   private final XboxController gamepad0Driver = new XboxController(0);
   private final XboxController gamepad1Operator = new XboxController(1);
@@ -85,10 +94,21 @@ public class Robot extends TimedRobot {
 
     driveConfig.disableFollowerMode();
     
+    LeftElevator.configure(driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     m_robotDrive.setSafetyEnabled(true);
     m_robotDrive.setDeadband(0.02);
-
-
+    rollerConfig.smartCurrentLimit(40);
+    rollerConfig.voltageCompensation(12);
+    RollerMotor.configure(rollerConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    ArmConfig.smartCurrentLimit(40);
+    ArmConfig.voltageCompensation(12);
+    ArmMotor.configure(ArmConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    endConfig.smartCurrentLimit(40);
+    endConfig.voltageCompensation(12);
+    endConfig.follow(TopEndMotor);
+    BottomEndMotor.configure(driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    endConfig.disableFollowerMode();
+    TopEndMotor.configure(driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
   
   } 
 
@@ -188,16 +208,62 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    if(gamepad1Operator.getRightBumperButton() == true){
+    /*if(gamepad0Driver.getLeftBumperButton() == true){
+      driveSpeed = 2;
+  }
+    if(gamepad0Driver.getRightBumperButton() == true){
+      driveSpeed = 1;
+    }*/
+    
+    if(gamepad1Operator.getRightStickButtonPressed()){
+      
       LeftElevator.set(.4);
+      if (gamepad1Operator.getRightStickButtonReleased()){
+        LeftElevator.set(0);
+      }
     }
 
-    if(gamepad1Operator.getLeftBumperButton() == true){
+    if(gamepad1Operator.getLeftStickButtonPressed() == true){
+      
       LeftElevator.set(-.4);
+      if (gamepad1Operator.getLeftStickButtonReleased()){
+        LeftElevator.set(0);
+      }
     }
     m_robotDrive.arcadeDrive(-gamepad0Driver.getLeftY(), -gamepad0Driver.getRightX());
 
-
+    if (gamepad1Operator.getBButtonPressed()){
+      RollerMotor.set(0.5);
+    }
+    if (gamepad1Operator.getBButtonReleased()){
+      RollerMotor.set(0);
+    }
+    if (gamepad1Operator.getAButtonPressed()){
+      RollerMotor.set(-0.5);
+    }
+    if (gamepad1Operator.getAButtonReleased()){
+      RollerMotor.set(0);
+    }
+    if (gamepad1Operator.getXButtonPressed()){
+      ArmMotor.set(0.5);
+    }
+    if (gamepad1Operator.getXButtonReleased()){
+      ArmMotor.set(0);
+    }
+    if (gamepad1Operator.getYButtonPressed()){
+      ArmMotor.set(-0.5);
+    }
+    if (gamepad1Operator.getYButtonReleased()){
+      ArmMotor.set(0);
+    }
+    if (gamepad1Operator.getLeftBumperButtonPressed()){
+      TopEndMotor.set(.5);
+      BottomEndMotor.set(.5);
+      if (gamepad1Operator.getLeftBumperButtonReleased()){
+        TopEndMotor.set(.0);
+        BottomEndMotor.set(.0);
+      }
+    }
   }
 
   /** This function is called once when the robot is disabled. */
