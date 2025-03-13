@@ -219,16 +219,20 @@ public class Robot extends TimedRobot {
     if(gamepad1Operator.getRightStickButtonPressed()){
       
       LeftElevator.set(.4);
+      rightElevator.set(.4);
       if (gamepad1Operator.getRightStickButtonReleased()){
         LeftElevator.set(0);
+        rightElevator.set(0);
       }
     }
 
     if(gamepad1Operator.getLeftStickButtonPressed() == true){
       
       LeftElevator.set(-.4);
+      rightElevator.set(-.4);
       if (gamepad1Operator.getLeftStickButtonReleased()){
         LeftElevator.set(0);
+        rightElevator.set(0);
       }
     }
     m_robotDrive.arcadeDrive(-gamepad0Driver.getLeftY(), -gamepad0Driver.getRightX());
