@@ -238,13 +238,13 @@ public class Robot extends TimedRobot {
     m_robotDrive.arcadeDrive(-gamepad0Driver.getLeftY(), -gamepad0Driver.getRightX());
 
     if (gamepad1Operator.getBButtonPressed()){
-      RollerMotor.set(0.5);
+      RollerMotor.set(0.2);
     }
     if (gamepad1Operator.getBButtonReleased()){
       RollerMotor.set(0);
     }
     if (gamepad1Operator.getAButtonPressed()){
-      RollerMotor.set(-0.5);
+      RollerMotor.set(-0.25);
     }
     if (gamepad1Operator.getAButtonReleased()){
       RollerMotor.set(0);
