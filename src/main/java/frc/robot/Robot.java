@@ -89,10 +89,10 @@ public class Robot extends TimedRobot {
     driveConfig.smartCurrentLimit(60);
     driveConfig.voltageCompensation(12);
 
-    driveConfig.follow(LeftElevator);
+    //driveConfig.follow(LeftElevator);
     rightElevator.configure(driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-    driveConfig.disableFollowerMode();
+    //driveConfig.disableFollowerMode();
     
     LeftElevator.configure(driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     m_robotDrive.setSafetyEnabled(true);
@@ -245,13 +245,13 @@ public class Robot extends TimedRobot {
       RollerMotor.set(0);
     }
     if (gamepad1Operator.getXButtonPressed()){
-      ArmMotor.set(0.5);
+      ArmMotor.set(0.4);
     }
     if (gamepad1Operator.getXButtonReleased()){
       ArmMotor.set(0);
     }
     if (gamepad1Operator.getYButtonPressed()){
-      ArmMotor.set(-0.5);
+      ArmMotor.set(-0.4);
     }
     if (gamepad1Operator.getYButtonReleased()){
       ArmMotor.set(0);
