@@ -6,6 +6,9 @@ package frc.robot;
 
 
 
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.wpilibj.DriverStation;
+
 // added imports
 
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -19,7 +22,10 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.RelativeEncoder;
+import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 
@@ -29,7 +35,13 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.wpilibj.TimedRobot;
+
+
+
 
 
 /**
@@ -39,6 +51,7 @@ import com.ctre.phoenix6.signals.InvertedValue;
  */
 public class Robot extends TimedRobot {
   private static final String kDefaultAuto = "Default";
+  
   private static final String kCenter = "Center";
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
@@ -50,9 +63,11 @@ public class Robot extends TimedRobot {
 
   private final SparkMax LeftElevator = new SparkMax(4, MotorType.kBrushless);
   private final SparkMax rightElevator = new SparkMax(5, MotorType.kBrushless);
+  private final SparkClosedLoopController elevatorPID = LeftElevator.getClosedLoopController();
 
-  private final SparkMax RollerMotor = new SparkMax(6, MotorType.kBrushless);
-  private final SparkMax ArmMotor = new SparkMax(7, MotorType.kBrushless);
+  private final SparkMax ArmMotor = new SparkMax(6, MotorType.kBrushless);
+  private final SparkMax RollerMotor = new SparkMax(7, MotorType.kBrushless);
+  
   private final SparkMax TopEndMotor = new SparkMax(8, MotorType.kBrushless);
   private final SparkMax BottomEndMotor = new SparkMax(9, MotorType.kBrushless);
 
@@ -84,41 +99,54 @@ public class Robot extends TimedRobot {
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("Center", kCenter);
     SmartDashboard.putData("Auto choices", m_chooser);
-
+    CameraServer.startAutomaticCapture(0);
+    CameraServer.startAutomaticCapture(1);
+    /*CameraServer.getServer("CAM")
+    CameraServer.getVideo();*/
     configureMotors();
-
-    driveConfig.smartCurrentLimit(60);
+    
+    driveConfig.smartCurrentLimit(40);
     driveConfig.voltageCompensation(12);
+    driveConfig.softLimit.reverseSoftLimitEnabled(true);
+    driveConfig.softLimit.reverseSoftLimit(-119.7);
 
-    //driveConfig.follow(LeftElevator);
+    driveConfig.closedLoop.p(0.2).i(0.0).d(0.0).outputRange(-1.0, .9);
+    driveConfig.closedLoop.velocityFF(1.0/473.0);
+    driveConfig.closedLoop.maxMotion.maxVelocity(20.0).maxAcceleration(60.0).allowedClosedLoopError(0.2);
+
+    driveConfig.follow(LeftElevator);
     rightElevator.configure(driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-    //driveConfig.disableFollowerMode();
+    driveConfig.disableFollowerMode();
     
     LeftElevator.configure(driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+
     m_robotDrive.setSafetyEnabled(true);
     m_robotDrive.setDeadband(0.02);
+
     rollerConfig.smartCurrentLimit(40);
     rollerConfig.voltageCompensation(12);
     RollerMotor.configure(rollerConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+
     ArmConfig.smartCurrentLimit(40);
     ArmConfig.voltageCompensation(12);
     ArmMotor.configure(ArmConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    
     endConfig.smartCurrentLimit(40);
     endConfig.voltageCompensation(12);
     endConfig.follow(TopEndMotor);
-    BottomEndMotor.configure(driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    BottomEndMotor.configure(endConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     endConfig.disableFollowerMode();
-    TopEndMotor.configure(driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    TopEndMotor.configure(endConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
   
   } 
 
   private void configureMotors() {
         // Apply default configurations
-        leftLeader.getConfigurator().apply(new MotorOutputConfigs());
-        leftFollower.getConfigurator().apply(new MotorOutputConfigs());
-        rightLeader.getConfigurator().apply(new MotorOutputConfigs());
-        rightFollower.getConfigurator().apply(new MotorOutputConfigs());
+        leftLeader.getConfigurator().apply(new TalonFXConfiguration());
+        leftFollower.getConfigurator().apply(new TalonFXConfiguration());
+        rightLeader.getConfigurator().apply(new TalonFXConfiguration());
+        rightFollower.getConfigurator().apply(new TalonFXConfiguration());
 
         // Set brake mode
         leftLeader.setNeutralMode(NeutralModeValue.Brake);
@@ -127,20 +155,26 @@ public class Robot extends TimedRobot {
         rightFollower.setNeutralMode(NeutralModeValue.Brake);
 
         // Set motor inversion
-        MotorOutputConfigs leftConfig = new MotorOutputConfigs();
-        leftConfig.Inverted = InvertedValue.CounterClockwise_Positive;
+        TalonFXConfiguration leftConfig = new TalonFXConfiguration();
+        leftConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        leftConfig.CurrentLimits.SupplyCurrentLimit = 40;
         leftLeader.getConfigurator().apply(leftConfig);
         leftFollower.getConfigurator().apply(leftConfig);
 
-        MotorOutputConfigs rightConfig = new MotorOutputConfigs();
-        rightConfig.Inverted = InvertedValue.Clockwise_Positive;
+        TalonFXConfiguration rightConfig = new TalonFXConfiguration();
+        rightConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        rightConfig.CurrentLimits.SupplyCurrentLimit = 40;
         rightLeader.getConfigurator().apply(rightConfig);
         rightFollower.getConfigurator().apply(rightConfig);
+        
 
         // Set followers
         leftFollower.setControl(new Follower(leftLeader.getDeviceID(), false));
         rightFollower.setControl(new Follower(rightLeader.getDeviceID(), false));
-  }
+
+
+
+  }     
     
     
 
@@ -180,22 +214,37 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
+    double driveSpeed = 0.0;
+    double endSpeed = 0.0;
+
     switch (m_autoSelected) {
       case kCenter:
-        // Put custom auto code here
-        if(m_timer.get()< 3){
-          m_robotDrive.tankDrive(0.5, 0.5);
-        }
-        if (m_timer.get()< 5){
-          m_robotDrive.tankDrive(0.5, -0.5);
-        } else {
-          m_robotDrive.tankDrive(0, 0);
-      }  
-      break;
       case kDefaultAuto: 
       default:
-        // Put default auto code here
-        m_robotDrive.tankDrive(0.5, 0.5);
+        // Put custom auto code here
+        if(m_timer.get()< 5){
+        driveSpeed = 0.25;
+        setPosition = Constants.ELEVATOR_BOTTOM;
+      
+    }
+      else if(m_timer.get()< 8){
+        setPosition = Constants.ELEVATOR_L4;
+
+
+      }
+      else if(m_timer.get()< 10){
+        setPosition = Constants.ELEVATOR_L4;
+        endSpeed = 0.25;
+
+      }
+    else {
+      setPosition = Constants.ELEVATOR_BOTTOM;
+        
+    }  
+      m_robotDrive.tankDrive(driveSpeed, driveSpeed);
+      elevatorPID.setReference(setPosition, ControlType.kPosition);
+      TopEndMotor.set(endSpeed);
+      BottomEndMotor.set(endSpeed);
       break;
     }
   }
@@ -206,6 +255,7 @@ public class Robot extends TimedRobot {
     
   }
   
+  double setPosition = Constants.ELEVATOR_BOTTOM;
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
@@ -216,60 +266,121 @@ public class Robot extends TimedRobot {
       driveSpeed = 1;
     }*/
     
-    if(gamepad1Operator.getRightStickButtonPressed()){
-      
+    /*if(gamepad1Operator.getRightStickButton()){
+      //Down
       LeftElevator.set(.4);
       rightElevator.set(.4);
-      if (gamepad1Operator.getRightStickButtonReleased()){
-        LeftElevator.set(0);
-        rightElevator.set(0);
-      }
     }
-
-    if(gamepad1Operator.getLeftStickButtonPressed() == true){
-      
+    else if(gamepad1Operator.getLeftStickButton()){
+      //Up
       LeftElevator.set(-.4);
       rightElevator.set(-.4);
-      if (gamepad1Operator.getLeftStickButtonReleased()){
-        LeftElevator.set(0);
-        rightElevator.set(0);
-      }
     }
-    m_robotDrive.arcadeDrive(-gamepad0Driver.getLeftY(), -gamepad0Driver.getRightX());
+    else {
+      LeftElevator.set(0);
+      rightElevator.set(0);
+    }*/
 
-    if (gamepad1Operator.getBButtonPressed()){
-      RollerMotor.set(0.2);
+    if (gamepad1Operator.getYButtonPressed()){
+      setPosition = Constants.ELEVATOR_BOTTOM;
     }
-    if (gamepad1Operator.getBButtonReleased()){
-      RollerMotor.set(0);
+    else if (gamepad1Operator.getBButtonPressed()){
+      setPosition = Constants.ELEVATOR_L2;
     }
-    if (gamepad1Operator.getAButtonPressed()){
+    else if (gamepad1Operator.getAButtonPressed()){
+      setPosition = Constants.ELEVATOR_L3;
+    }
+    else if (gamepad1Operator.getXButtonPressed()){
+      setPosition = Constants.ELEVATOR_L4;
+    }
+
+    //Set Elevator Position
+    elevatorPID.setReference(setPosition, ControlType.kPosition);
+
+    if (gamepad1Operator.getStartButton())
+    {
+      DriverStation.reportError("test", true);
+      RelativeEncoder elevatorEncoder = LeftElevator.getEncoder();
+      elevatorEncoder.setPosition(0.0);
+    }
+
+    m_robotDrive.arcadeDrive(-gamepad0Driver.getLeftY()*0.75, -gamepad0Driver.getRightX()*0.75);
+
+    if (gamepad1Operator.getYButtonPressed()){
+      setPosition = Constants.ELEVATOR_BOTTOM;
+    }
+    else if (gamepad1Operator.getBButtonPressed()){
+      setPosition = Constants.ELEVATOR_L2;
+    }
+    else if (gamepad1Operator.getAButtonPressed()){
+      setPosition = Constants.ELEVATOR_L3;
+    }
+    else if (gamepad1Operator.getXButtonPressed()){
+      setPosition = Constants.ELEVATOR_L4;
+    }
+
+    //Set Elevator Position
+    elevatorPID.setReference(setPosition, ControlType.kPosition);
+
+    if (gamepad1Operator.getStartButton())
+    {
+      DriverStation.reportError("test", true);
+      RelativeEncoder elevatorEncoder = LeftElevator.getEncoder();
+      elevatorEncoder.setPosition(0.0);
+    }
+
+    m_robotDrive.arcadeDrive(-gamepad0Driver.getLeftY()*0.75, -gamepad0Driver.getRightX()*0.75);
+
+    if (gamepad0Driver.getLeftBumperButtonPressed()){
       RollerMotor.set(-0.25);
     }
-    if (gamepad1Operator.getAButtonReleased()){
+    if (gamepad0Driver.getLeftBumperButtonReleased()){
       RollerMotor.set(0);
     }
-    if (gamepad1Operator.getXButtonPressed()){
-      ArmMotor.set(0.4);
+    if (gamepad0Driver.getRightBumperButtonPressed()){
+      RollerMotor.set(0.2);
     }
-    if (gamepad1Operator.getXButtonReleased()){
+    if (gamepad0Driver.getRightBumperButtonReleased()){
+      RollerMotor.set(0);
+    }
+
+    
+    if (gamepad0Driver.getYButtonPressed()){
+      ArmMotor.set(0.2);
+    }
+    if (gamepad0Driver.getYButtonReleased()){
       ArmMotor.set(0);
     }
-    if (gamepad1Operator.getYButtonPressed()){
-      ArmMotor.set(-0.4);
+    if (gamepad0Driver.getXButtonPressed()){
+      ArmMotor.set(-0.2);
     }
-    if (gamepad1Operator.getYButtonReleased()){
+    if (gamepad0Driver.getXButtonReleased()){
       ArmMotor.set(0);
     }
-    if (gamepad1Operator.getLeftBumperButtonPressed()){
-      TopEndMotor.set(.5);
-      BottomEndMotor.set(.5);
-      if (gamepad1Operator.getLeftBumperButtonReleased()){
-        TopEndMotor.set(.0);
-        BottomEndMotor.set(.0);
-      }
+
+    
+
+    
+    if (gamepad1Operator.getLeftBumperButton()){
+      //out
+      TopEndMotor.set(.25);
+      BottomEndMotor.set(.25);
     }
+    else if (gamepad1Operator.getRightBumperButton()){
+      //in
+      TopEndMotor.set(-.25);
+      BottomEndMotor.set(-.25);
+    }
+    else {
+      TopEndMotor.set(.0);
+      BottomEndMotor.set(.0);
+    }
+    
   }
+
+
+    
+  
 
   /** This function is called once when the robot is disabled. */
   @Override
